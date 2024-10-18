@@ -1,7 +1,6 @@
 import os
 import obspy
 from obspy.core.stream import Stream
-
 import repetition_function as rf
 from pythonProject.repetition_function import match_dataname
 
@@ -13,6 +12,9 @@ if __name__ == "__main__":
     #匹配台站参数和数据：
     for sta_info,station in paz:
         try:
-            st += match_dataname(station)   #一定要在这一步加入的时候之前就将台站参数导进去，要不然就不好导入了
+            st += match_dataname(station,sta_info)   #一定要在这一步加入的时候之前就将台站参数导进去，要不然就不好导入了
         except:
             continue
+    for i in range(len(st)):
+        print("*"*80)
+        print(st[i].stats)
