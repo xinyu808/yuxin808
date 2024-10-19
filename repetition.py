@@ -3,12 +3,13 @@ import obspy
 from obspy.core.stream import Stream
 import repetition_function as rf
 import matplotlib.pyplot as plt
-from pythonProject.repetition_function import match_dataname
+from pythonProject.repetition_function import match_dataname,section_plot
+from obspy.core.util import AttribDict
 
 #这里是方便后续导入到Path下全部txt文件名称，方便批量化处理服务的。
 if __name__ == "__main__":
-    path = os.path.abspath(r"./paz_respond")
-    paz = rf.get_paz(path)
+    # path = os.path.abspath(r"./paz_respond")
+    # paz = rf.get_paz(path)
     st = Stream()
     # #匹配台站参数和数据：
     # for sta_info,station in paz:
@@ -21,4 +22,5 @@ if __name__ == "__main__":
     st += rf.load_data(os.path.abspath(r"./data"))#可以在这里更改传入路径
     st_band = st.copy()
     st_band.filter('bandpass', freqmin=0.5, freqmax=1.0, corners=2, zerophase=True)
-    #   对于顺利读取滤波的数据，进行section图绘制
+    #  绘制section图,导入进行滤波处理后的图：
+    section_plot(st_band)

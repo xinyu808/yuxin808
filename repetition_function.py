@@ -3,6 +3,7 @@ import re
 import obspy
 from obspy.core.stream import Stream
 from obspy.core.util import AttribDict
+import matplotlib.pyplot as plt
 
 
 #利用生成器依次获得文件内容和文件名方便匹配
@@ -84,3 +85,15 @@ def load_data(path):
     #这里可以选择读取输出的方向：
     st = st.select(component="Z")
     return st
+
+#这里就是专门用来绘制section图的
+def section_plot(st_band):
+    ev_coord = (st_band[0].stats.sac.evla,st_band[0].stats.sac.evlo)
+    #导入台站的必备参数lat与lon
+    for tr in st_band:
+        tr.stats.coordinates = AttribDict({'latitude': tr.stats.sac.stla,
+                                           'longitude': tr.stats.sac.stlo})
+    fig = plt.figure()
+    st_band.plot(type='section', plot_dx=100, dist_degree=True, ev_coord=ev_coord, recordlength=100,
+            time_down=True, linewidth=.25, grid_linewidth=.25, show=False, fig=fig)
+    plt.show()
