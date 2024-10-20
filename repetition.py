@@ -21,6 +21,6 @@ if __name__ == "__main__":
     #   对读取到的数据进行滤波区分：
     st += rf.load_data(os.path.abspath(r"./data"))#可以在这里更改传入路径
     st_band = st.copy()
-    st_band.filter('bandpass', freqmin=0.5, freqmax=1.0, corners=2, zerophase=True)
+    st_band.filter('bandpass', freqmin=0.5, freqmax=1.0, corners=3, zerophase=True)
     #  绘制section图,导入进行滤波处理后的图：
     section_plot(st_band)

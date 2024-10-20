@@ -3,7 +3,9 @@ import re
 import obspy
 from obspy.core.stream import Stream
 from obspy.core.util import AttribDict
+from obspy.taup import TauPyModel
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 #利用生成器依次获得文件内容和文件名方便匹配
@@ -86,6 +88,37 @@ def load_data(path):
     st = st.select(component="Z")
     return st
 
+#   这里计划用来获取P'P'的到时
+#   st_band导入输入的数据，seismic_phase用来输入你想要获取震相类型
+def get_tauptime(st_band,seismic_phase):
+    #先获取地震的位置
+    event_depth = st_band[0].stats.sac.evdp  # 地震深度，单位为千米
+    event_latitude = st_band[0].stats.sac.evla  # 地震纬度
+    event_longitude = st_band[0].stats.sac.evlo  # 地震经度
+    #计算每一个台站的P'P'到时
+    model = TauPyModel(model="prem")  # 使用 IASP91 地球模型
+    # 计算震中距
+    t = np.zeros(len(st_band),)
+    num = 0 #   计数器
+    for tr in st_band:
+        gcarc = tr.stats.sac.gcarc  #导入震中距
+        stdp = 10**(-3)*tr.stats.sac.stdp  #m换成km
+        # 获取 PKPPKP 相位的理论到达时间
+        arrivals = model.get_travel_times(source_depth_in_km=event_depth,
+                                          distance_in_degree=gcarc,
+                                          phase_list=[seismic_phase],
+                                          receiver_depth_in_km=stdp)
+        # 直接获取 PKPPKP 相位的理论到达时间
+        pkIkppkIkp_arrival = arrivals[0].time if arrivals else None
+        if pkIkppkIkp_arrival is not None:
+            # 将 PKPPKP 相位的理论到达时间保存到 stats 中
+            tr.stats.pkppkp_theory_time = pkIkppkIkp_arrival
+            t[num] = pkIkppkIkp_arrival
+        else:
+            print(f"No PKIKPPKIKP arrival found for station {tr.stats.station}")
+        num += 1
+    return t.min()
+
 #这里就是专门用来绘制section图的
 def section_plot(st_band):
     ev_coord = (st_band[0].stats.sac.evla,st_band[0].stats.sac.evlo)
@@ -93,7 +126,13 @@ def section_plot(st_band):
     for tr in st_band:
         tr.stats.coordinates = AttribDict({'latitude': tr.stats.sac.stla,
                                            'longitude': tr.stats.sac.stlo})
+    # #   这里我们先要进一步获取到P'P'的到时作为sac 的lh o
+    # #   这里由于我们研究的对象是将P'P'作为初始震相
+    # seismic_phase = "PKIKPPKIKP"
+    # t0 = get_tauptime(st_band,seismic_phase)    #   获得最早到的t0  #   本次我们得知最早到时为2300s左右
     fig = plt.figure()
-    st_band.plot(type='section', plot_dx=100, dist_degree=True, ev_coord=ev_coord, recordlength=100,
-            time_down=True, linewidth=.25, grid_linewidth=.25, show=False, fig=fig)
+    st_band.plot(type='section', plot_dx=1, dist_degree=True,
+                 ev_coord=ev_coord,recordstart=2100, recordlength=300,
+                 time_down=False, linewidth=.25, grid_linewidth=.25, show=False, fig=fig)
+    plt.xlim(78.8,83.6)
     plt.show()
